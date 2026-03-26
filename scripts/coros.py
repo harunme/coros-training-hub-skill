@@ -215,7 +215,7 @@ def format_schedule_entity(entity, programs_map):
     if duration:
         lines.append(f"  预计时长:   {format_duration(duration)}")
     if training_load:
-        lines.append(f"  训练负荷:   {training_load}")
+        lines.append(f"  训练负荷: {training_load}")
     return "\n".join(lines)
 
 
