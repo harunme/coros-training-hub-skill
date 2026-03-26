@@ -297,8 +297,8 @@ def main():
 
     # 训练日程查询
     sch_parser = subparsers.add_parser("schedule", help="查询训练日程")
-    sch_parser.add_argument("--start", required=True, help="开始日期（YYYYMMDD，如 20260420）")
-    sch_parser.add_argument("--end", required=True, help="结束日期（YYYYMMDD，如 20260510）")
+    sch_parser.add_argument("--start", required=True, help="开始日期（必需，YYYYMMDD，如 20260420）")
+    sch_parser.add_argument("--end", required=True, help="结束日期（必需，YYYYMMDD，如 20260510）")
 
     args = parser.parse_args()
 
