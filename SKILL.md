@@ -1,89 +1,89 @@
 ---
 name: coros-training-hub
-description: "从 COROS 高驰训练中心获取用户的运动数据（跑步、健走、越野跑等）和训练日程计划，包括距离、配速、心率、训练负荷等指标。当用户询问跑步数据、训练记录、高驰运动历史、训练计划、训练日程时触发。"
+description: "Fetch user's activity data (running, hiking, trail running, etc.) and training schedules from COROS Training Hub, including distance, pace, heart rate, and training load. Triggered when user asks about running data, training records, COROS history, training plans, or schedules."
 ---
 
 # COROS Training Hub
 
-从 COROS 高驰训练中心获取并展示用户的运动数据。
+Fetch and display user's activity data and training schedules from COROS Training Hub.
 
-## 工作流
+## Workflow
 
-### Step 1 — 获取 accessToken
+### Step 1 — Get accessToken
 
-Token 需通过浏览器 DevTools 抓包获取（COROS 密码经过 bcrypt 前端哈希，无法在 Python 端直接复现）。
+Token must be captured via browser DevTools (COROS password is hashed with bcrypt on the frontend and cannot be replicated in Python).
 
-抓包步骤：
+Capture steps:
 
-1. 打开 https://trainingcn.coros.com/login 并登录
-2. 浏览器 F12 -> Application/Cookies，复制 `CPL-coros-token` 的值（约 32 字符）
+1. Open https://trainingcn.coros.com/login and log in
+2. Browser F12 -> Application/Cookies, copy value of `CPL-coros-token` (~32 chars)
 
-### Step 2 — 调用脚本
+### Step 2 — Run the script
 
 ```bash
 python3 scripts/coros.py --token <accessToken> activities [--size N] [--page N]
 python3 scripts/coros.py --token <accessToken> schedule --start <YYYYMMDD> --end <YYYYMMDD>
 ```
 
-### Step 3 — 展示结果
+### Step 3 — Output
 
-#### 运动记录
+#### Activity Records
 
-| 字段     | 说明                       |
-| -------- | -------------------------- |
-| 名称     | 运动名称（如"6k轻松跑"）   |
-| 日期     | 运动日期（YYYY-MM-DD）     |
-| 类型     | 跑步 / 越野跑 / 健走       |
-| 距离     | 公里数（保留2位小数）      |
-| 时长     | 总时长（H:MM:SS 或 MM:SS） |
-| 配速     | 平均配速（min:sec /km）    |
-| 平均心率 | bpm（如有）                |
-| 最大心率 | bpm（如有）                |
-| 平均步频 | spm（如有）                |
-| 步数     | 总步数（如有）             |
-| 训练负荷 | Training Load 数值         |
-| 累计爬升 | 米                         |
-| 累计下降 | 米                         |
-| 热量     | 千卡                       |
-| 设备     | 手表型号                   |
+| Field        | Description                          |
+| ------------ | ------------------------------------ |
+| Name         | Activity name (e.g. "6k Easy Run")    |
+| Date         | Date (YYYY-MM-DD)                    |
+| Type         | Running / Trail Running / Walking     |
+| Distance     | Kilometers (2 decimal places)         |
+| Duration     | Total time (H:MM:SS or MM:SS)        |
+| Pace         | Average pace (min:sec /km)           |
+| Avg HR       | bpm (if available)                   |
+| Max HR       | bpm (if available)                   |
+| Avg Cadence  | spm (if available)                   |
+| Steps        | Total steps (if available)           |
+| Training Load| Training Load value                  |
+| Ascent       | Meters                               |
+| Descent      | Meters                               |
+| Calories     | Kilocalories                         |
+| Device       | Watch model                          |
 
-#### 训练日程
+#### Training Schedule
 
-| 字段     | 说明                             |
-| -------- | -------------------------------- |
-| 计划名称 | 整体计划名（如"全马330计划"）    |
-| 计划序号 | 计划第 N 天                      |
-| 日期     | 计划日期（YYYY-MM-DD + 星期）    |
-| 状态     | 已完成 / 未开始                  |
-| 训练项目 | 当日训练项目名称                 |
-| 训练内容 | 当日训练项目（热身/主训练/拉伸） |
-| 预计距离 | 计划总距离（米 → 公里）          |
-| 预计时长 | 预计时长（秒 → H:MM:SS）         |
-| 训练负荷 | Training Load 数值               |
-| 赛事标记 | 如有"比赛"等事件标注             |
+| Field         | Description                                |
+| ------------- | ------------------------------------------ |
+| Plan Name     | Overall plan name (e.g. "Sub-3:30 Marathon")|
+| Day No.       | Day N of the plan                          |
+| Date          | Date (YYYY-MM-DD + weekday)                |
+| Status        | Completed / Not Started                    |
+| Training Item | Day's training item name                   |
+| Training Content| Day's exercises (warmup/main/stretch)     |
+| Est. Distance| Planned total distance (m -> km)            |
+| Est. Duration| Planned duration (s -> H:MM:SS)             |
+| Training Load | Training Load value                        |
+| Event Tag     | Event markers (e.g. race day)              |
 
-每周汇总展示本周计划距离、计划时长、计划训练负荷、ATI/CTI，以及已完成部分的实际距离和实际负荷。
+Weekly summary shows planned distance, duration, training load, ATI/CTI, and completed actual distance and load.
 
-## 字段换算规则
+## Field Conversion Rules
 
-- `avgSpeed`：秒/公里 → `min:sec/km`
-- `distance`：米 → 公里
-- `totalTime`：秒 → `H:MM:SS`
-- 数据按时间倒序排列，第1条为最新记录
+- `avgSpeed`: sec/km -> `min:sec/km`
+- `distance`: meters -> kilometers
+- `totalTime`: seconds -> `H:MM:SS`
+- Data ordered newest-first
 
-## API 端点
+## API Endpoints
 
-- 运动数据：`GET https://teamcnapi.coros.com/activity/query`
-  - Header：`accesstoken: <accessToken>`（小写，非 Authorization）
-  - 参数：`size`, `pageNumber`
-- 训练日程：`GET https://teamcnapi.coros.com/training/schedule/query`
-  - Header：`accesstoken: <accessToken>`（小写）
-  - 参数：`startDate`（YYYYMMDD 格式，如 20260420）, `endDate`（YYYYMMDD 格式）, `supportRestExercise`（传 1）
+- Activity data: `GET https://teamcnapi.coros.com/activity/query`
+  - Header: `accesstoken: <accessToken>` (lowercase, not Authorization)
+  - Params: `size`, `pageNumber`
+- Training schedule: `GET https://teamcnapi.coros.com/training/schedule/query`
+  - Header: `accesstoken: <accessToken>` (lowercase)
+  - Params: `startDate` (YYYYMMDD, e.g. 20260420), `endDate` (YYYYMMDD), `supportRestExercise` (pass 1)
 
-## 日程解析规则
+## Schedule Parsing Rules
 
-- `happenDay`：计划日期（YYYYMMDD 整数）
-- `executeStatus`：0=未开始，1=已完成
-- `exerciseType`：1=热身，2=主训练，3=拉伸
-- `targetType=5`：距离类目标（米），`targetType=2`：时间类目标（秒）
-- `weekStages`：每周汇总，含计划距离/时长/训练负荷/ATI/CTI 及实际完成数据
+- `happenDay`: planned date (YYYYMMDD integer)
+- `executeStatus`: 0=Not Started, 1=Completed
+- `exerciseType`: 1=Warm-up, 2=Main, 3=Stretch
+- `targetType=5`: distance target (meters), `targetType=2`: time target (seconds)
+- `weekStages`: weekly summary with planned distance/duration/load/ATI/CTI and actual completion data

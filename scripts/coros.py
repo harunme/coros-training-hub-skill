@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-COROS Training Hub - 使用 accessToken 获取运动数据和训练日程
+COROS Training Hub - Fetch activity data and training schedules using accessToken.
 
-用法:
+Usage:
     python3 coros.py --token <accessToken> activities [--size N] [--page N]
     python3 coros.py --token <accessToken> schedule --start <YYYYMMDD> --end <YYYYMMDD>
 
-accessToken 获取方式（浏览器 DevTools）:
-    1. 打开 https://trainingcn.coros.com/login 并登录
-    2. 浏览器 F12 -> Application/Cookies，复制 `CPL-coros-token` 的值（约 32 字符）
+Getting accessToken (browser DevTools):
+    1. Open https://trainingcn.coros.com/login and log in
+    2. Browser F12 -> Application/Cookies, copy value of `CPL-coros-token` (~32 chars)
 """
 
 import argparse
@@ -18,10 +18,10 @@ from datetime import datetime
 try:
     import requests
 except ImportError:
-    print("需要安装 requests 库: pip install requests")
+    print("requests library required: pip install requests")
     sys.exit(1)
 
-# API 配置
+# API configuration
 API_ACTIVITY_URL = "https://teamcnapi.coros.com/activity/query"
 API_SCHEDULE_URL = "https://teamcnapi.coros.com/training/schedule/query"
 
@@ -35,8 +35,8 @@ BASE_HEADERS = {
 
 
 def format_date(date_int, start_time=None):
-    """将 YYYYMMDD 整数或 Unix 时间戳转换为可读日期，含星期"""
-    weekday_cn = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    """Convert YYYYMMDD int or Unix timestamp to readable date with weekday."""
+    weekday_cn = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
     if start_time:
         try:
@@ -54,7 +54,7 @@ def format_date(date_int, start_time=None):
 
 
 def format_pace(seconds_per_km):
-    """将秒/公里转换为 min:sec/km"""
+    """Convert sec/km to min:sec/km."""
     if not seconds_per_km or seconds_per_km <= 0:
         return "--:--"
     mins = int(seconds_per_km // 60)
@@ -63,7 +63,7 @@ def format_pace(seconds_per_km):
 
 
 def format_duration(seconds):
-    """将秒数转换为 H:MM:SS 或 MM:SS"""
+    """Convert seconds to H:MM:SS or MM:SS."""
     if seconds is None or seconds < 0:
         return "--:--"
     h = seconds // 3600
@@ -75,37 +75,37 @@ def format_duration(seconds):
 
 
 def format_distance(meters):
-    """将米转换为公里，保留2位小数"""
+    """Convert meters to km with 2 decimal places."""
     if meters is None:
         return "0.00"
     return f"{meters / 1000:.2f}"
 
 
 def format_distance_raw(meters):
-    """将米转换为公里（保留1位小数）"""
+    """Convert meters to km with 1 decimal place."""
     if meters is None:
         return "0"
     return f"{meters / 1000:.1f}"
 
 
 def sport_type_name(sport_type, mode):
-    """根据运动类型返回中文名称"""
+    """Return English sport type name."""
     mapping = {
-        (100, 8):  "跑步",
-        (100, 6):  "跑步",
-        (100, 15): "越野跑",
-        (100, 31): "健走",
-        (102, 15): "越野跑",
-        (900, 31): "健走",
+        (100, 8):  "Running",
+        (100, 6):  "Running",
+        (100, 15): "Trail Running",
+        (100, 31): "Walking",
+        (102, 15): "Trail Running",
+        (900, 31): "Walking",
     }
-    return mapping.get((sport_type, mode), "跑步")
+    return mapping.get((sport_type, mode), "Running")
 
 
 def format_activity(a):
-    """将单条运动数据格式化为易读字符串"""
+    """Format a single activity record into a readable string."""
     sport_type = a.get("sportType", 100)
     mode       = a.get("mode", 0)
-    name       = a.get("name", "未知")
+    name       = a.get("name", "Unknown")
     date_int   = a.get("date")
     start_time = a.get("startTime")
     distance   = float(a.get("distance") or 0)
@@ -122,64 +122,64 @@ def format_activity(a):
     avg_cadence = a.get("avgCadence", 0)
 
     lines = []
-    lines.append(f"  名称:     {name}")
-    lines.append(f"  日期:     {format_date(date_int, start_time)}")
-    lines.append(f"  类型:     {sport_type_name(sport_type, mode)}")
-    lines.append(f"  距离:     {format_distance(distance)} km")
-    lines.append(f"  时长:     {format_duration(total_time)}")
-    lines.append(f"  配速:     {format_pace(avg_speed)} /km")
+    lines.append(f"  Name:         {name}")
+    lines.append(f"  Date:         {format_date(date_int, start_time)}")
+    lines.append(f"  Type:         {sport_type_name(sport_type, mode)}")
+    lines.append(f"  Distance:     {format_distance(distance)} km")
+    lines.append(f"  Duration:     {format_duration(total_time)}")
+    lines.append(f"  Pace:         {format_pace(avg_speed)} /km")
     if avg_hr:
-        lines.append(f"  平均心率: {avg_hr} bpm")
+        lines.append(f"  Avg HR:       {avg_hr} bpm")
     if max_hr:
-        lines.append(f"  最大心率: {max_hr} bpm")
+        lines.append(f"  Max HR:       {max_hr} bpm")
     if avg_cadence:
-        lines.append(f"  平均步频: {avg_cadence} spm")
+        lines.append(f"  Avg Cadence:  {avg_cadence} spm")
     if step:
-        lines.append(f"  步数:     {step}")
-    lines.append(f"  训练负荷: {training_load}")
-    lines.append(f"  累计爬升: {ascent} m")
-    lines.append(f"  累计下降: {descent} m")
+        lines.append(f"  Steps:        {step}")
+    lines.append(f"  Training Load: {training_load}")
+    lines.append(f"  Ascent:       {ascent} m")
+    lines.append(f"  Descent:      {descent} m")
     if calorie:
-        lines.append(f"  热量:     {calorie // 1000:,} kcal")
+        lines.append(f"  Calories:     {calorie // 1000:,} kcal")
     if device:
-        lines.append(f"  设备:     {device}")
+        lines.append(f"  Device:       {device}")
     return "\n".join(lines)
 
 
 def exercise_type_name(exercise_type):
-    """根据 exerciseType 返回中文名称"""
+    """Return English exercise type name."""
     mapping = {
-        1: "热身",
-        2: "主训练",
-        3: "拉伸",
+        1: "Warm-up",
+        2: "Main",
+        3: "Stretch",
     }
-    return mapping.get(exercise_type, f"类型{exercise_type}")
+    return mapping.get(exercise_type, f"Type {exercise_type}")
 
 
 def format_target(target_type, target_value):
-    """格式化目标值（根据 targetType 单位）"""
-    if target_type == 2:  # 时间（秒）
+    """Format target value based on targetType unit."""
+    if target_type == 2:  # time (seconds)
         return format_duration(target_value)
-    if target_type == 5:  # 距离（米）
+    if target_type == 5:  # distance (meters)
         return f"{format_distance_raw(target_value)} km"
-    if target_type == 1:  # 次数
+    if target_type == 1:  # count
         return str(target_value)
     return str(target_value)
 
 
 def schedule_status(execute_status):
-    """根据 executeStatus 返回中文状态"""
+    """Return English status from executeStatus."""
     mapping = {
-        0: "未开始",
-        1: "已完成",
+        0: "Not Started",
+        1: "Completed",
     }
     return mapping.get(execute_status, str(execute_status))
 
 
 def format_exercise_summary(bar_chart):
-    """将 exerciseBarChart 格式化为一行简述"""
+    """Format exerciseBarChart into a single-line summary."""
     if not bar_chart:
-        return "无"
+        return "None"
     parts = []
     for ex in bar_chart:
         name = ex.get("name", "?")
@@ -191,7 +191,7 @@ def format_exercise_summary(bar_chart):
 
 
 def format_schedule_entity(entity, programs_map):
-    """将单个日程条目格式化为易读字符串"""
+    """Format a single schedule entity into a readable string."""
     happen_day = entity.get("happenDay", 0)
     day_no = entity.get("dayNo", 0)
     status = schedule_status(entity.get("executeStatus", 0))
@@ -202,25 +202,25 @@ def format_schedule_entity(entity, programs_map):
     plan_distance = program.get("distance", 0) or entity.get("totalDistance", 0)
     duration = program.get("duration", 0)
     training_load = program.get("trainingLoad", 0)
-    program_name = program.get("name", "未知")
+    program_name = program.get("name", "Unknown")
 
     lines = []
-    lines.append(f"  日期:       {format_date(happen_day)}")
-    lines.append(f"  计划序号:   第 {day_no} 天")
-    lines.append(f"  状态:       {status}")
-    lines.append(f"  训练项目:   {program_name}")
-    lines.append(f"  训练内容:   {format_exercise_summary(bar_chart)}")
+    lines.append(f"  Date:          {format_date(happen_day)}")
+    lines.append(f"  Day No.:       Day {day_no}")
+    lines.append(f"  Status:        {status}")
+    lines.append(f"  Training Item: {program_name}")
+    lines.append(f"  Content:       {format_exercise_summary(bar_chart)}")
     if plan_distance:
-        lines.append(f"  预计距离:   {format_distance_raw(plan_distance)} km")
+        lines.append(f"  Est. Distance: {format_distance_raw(plan_distance)} km")
     if duration:
-        lines.append(f"  预计时长:   {format_duration(duration)}")
+        lines.append(f"  Est. Duration: {format_duration(duration)}")
     if training_load:
-        lines.append(f"  训练负荷: {training_load}")
+        lines.append(f"  Training Load: {training_load}")
     return "\n".join(lines)
 
 
 def format_week_stage(stage):
-    """将 weekStages 中的单周数据格式化"""
+    """Format a weekStages entry into a readable string."""
     first_day = stage.get("firstDayInWeek", 0)
     train_sum = stage.get("trainSum", {})
 
@@ -238,18 +238,18 @@ def format_week_stage(stage):
         plan_dist_val = float(plan_distance)
 
     lines = []
-    lines.append(f"  周起始:   {format_date(first_day)}")
-    lines.append(f"  计划距离: {format_distance_raw(plan_dist_val)} km")
-    lines.append(f"  计划时长: {format_duration(plan_duration)}")
-    lines.append(f"  计划负荷: {plan_load}  |  ATI {plan_ati} / CTI {plan_cti}")
+    lines.append(f"  Week Start:    {format_date(first_day)}")
+    lines.append(f"  Plan Distance: {format_distance_raw(plan_dist_val)} km")
+    lines.append(f"  Plan Duration: {format_duration(plan_duration)}")
+    lines.append(f"  Plan Load:     {plan_load}  |  ATI {plan_ati} / CTI {plan_cti}")
     if actual_load > 0:
-        lines.append(f"  实际距离: {format_distance_raw(float(str(actual_distance).replace(',','').replace('"','')))} km")
-        lines.append(f"  实际负荷: {actual_load}")
+        lines.append(f"  Actual Dist:   {format_distance_raw(float(str(actual_distance).replace(',','').replace('"','')))} km")
+        lines.append(f"  Actual Load:   {actual_load}")
     return "\n".join(lines)
 
 
 def fetch_activities(token, size=20, page=1):
-    """获取运动数据列表"""
+    """Fetch activity data list."""
     headers = {
         **BASE_HEADERS,
         "accesstoken": token,
@@ -264,7 +264,7 @@ def fetch_activities(token, size=20, page=1):
 
 
 def fetch_schedule(token, start_date, end_date):
-    """获取训练日程"""
+    """Fetch training schedule."""
     headers = {
         **BASE_HEADERS,
         "accesstoken": token,
@@ -281,24 +281,24 @@ def fetch_schedule(token, start_date, end_date):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="COROS Training Hub - 获取高驰运动数据"
+        description="COROS Training Hub - Fetch COROS activity data and training schedules"
     )
     parser.add_argument(
         "--token",
         required=True,
-        help="COROS accessToken（从浏览器 DevTools Application/Cookies（CPL-coros-token） 获取）",
+        help="COROS accessToken (from browser DevTools Application/Cookies, CPL-coros-token)",
     )
-    subparsers = parser.add_subparsers(dest="command", required=True, help="子命令")
+    subparsers = parser.add_subparsers(dest="command", required=True, help="subcommands")
 
-    # 运动数据查询
-    act_parser = subparsers.add_parser("activities", help="查询运动记录")
-    act_parser.add_argument("--size", type=int, default=20, help="每次获取的记录数（默认20）")
-    act_parser.add_argument("--page", type=int, default=1, help="页码（默认1，即最新数据）")
+    # Activity data query
+    act_parser = subparsers.add_parser("activities", help="Query activity records")
+    act_parser.add_argument("--size", type=int, default=20, help="Records per page (default: 20)")
+    act_parser.add_argument("--page", type=int, default=1, help="Page number, 1 = most recent (default: 1)")
 
-    # 训练日程查询
-    sch_parser = subparsers.add_parser("schedule", help="查询训练日程")
-    sch_parser.add_argument("--start", required=True, help="开始日期（必需，YYYYMMDD，如 20260420）")
-    sch_parser.add_argument("--end", required=True, help="结束日期（必需，YYYYMMDD，如 20260510）")
+    # Training schedule query
+    sch_parser = subparsers.add_parser("schedule", help="Query training schedule")
+    sch_parser.add_argument("--start", required=True, help="Start date (required, YYYYMMDD, e.g. 20260420)")
+    sch_parser.add_argument("--end", required=True, help="End date (required, YYYYMMDD, e.g. 20260510)")
 
     args = parser.parse_args()
 
@@ -309,17 +309,17 @@ def main():
 
 
 def _cmd_activities(args):
-    """处理运动数据查询"""
-    print(f"正在获取最近 {args.size} 条运动数据（第 {args.page} 页）...", file=sys.stderr)
+    """Handle activity data query."""
+    print(f"Fetching {args.size} activities (page {args.page})...", file=sys.stderr)
     try:
         result = fetch_activities(args.token, size=args.size, page=args.page)
     except Exception as e:
-        print(f"获取数据失败: {e}", file=sys.stderr)
+        print(f"Failed to fetch data: {e}", file=sys.stderr)
         sys.exit(1)
 
     result_code = result.get("result", "")
     if result_code != "0000":
-        print(f"API 返回错误: {result.get('message', result)}", file=sys.stderr)
+        print(f"API error: {result.get('message', result)}", file=sys.stderr)
         sys.exit(1)
 
     data        = result.get("data", {})
@@ -327,43 +327,43 @@ def _cmd_activities(args):
     data_list   = data.get("dataList", [])
 
     if not data_list:
-        print("暂无运动数据")
+        print("No activity records found.")
         return
 
     total_pages  = data.get("totalPage", 1)
     current_page = data.get("pageNumber", 1)
 
     print(
-        f"\n共 {total_count} 条运动记录，第 {current_page}/{total_pages} 页\n",
+        f"\n{total_count} activity records, page {current_page}/{total_pages}\n",
         file=sys.stderr,
     )
 
     for i, activity in enumerate(data_list, 1):
-        print(f"--- 记录 {i} ---")
+        print(f"--- Record {i} ---")
         print(format_activity(activity))
         print()
 
 
 def _cmd_schedule(args):
-    """处理训练日程查询"""
-    print(f"正在查询训练日程 {args.start} ~ {args.end}...", file=sys.stderr)
+    """Handle training schedule query."""
+    print(f"Querying training schedule {args.start} ~ {args.end}...", file=sys.stderr)
     try:
         result = fetch_schedule(args.token, args.start, args.end)
     except Exception as e:
-        print(f"获取训练日程失败: {e}", file=sys.stderr)
+        print(f"Failed to fetch schedule: {e}", file=sys.stderr)
         sys.exit(1)
 
     result_code = result.get("result", "")
     if result_code != "0000":
-        print(f"API 返回错误: {result.get('message', result)}", file=sys.stderr)
+        print(f"API error: {result.get('message', result)}", file=sys.stderr)
         sys.exit(1)
 
     data = result.get("data", {})
     if not data:
-        print("该时间段内暂无训练日程")
+        print("No training schedule found in this period.")
         return
 
-    plan_name = data.get("name", "未知计划")
+    plan_name = data.get("name", "Unknown Plan")
     sub_plans = data.get("subPlans", [])
     sub_plan_name = sub_plans[0].get("name", "") if sub_plans else ""
     start_day = data.get("startDay", 0)
@@ -371,19 +371,19 @@ def _cmd_schedule(args):
     total_day = data.get("totalDay", 0)
 
     print(f"\n{'='*50}")
-    print(f"计划名称: {plan_name}")
+    print(f"Plan Name:  {plan_name}")
     if sub_plan_name:
-        print(f"子计划:   {sub_plan_name}")
+        print(f"Sub-plan:   {sub_plan_name}")
     if start_day and end_day:
-        print(f"计划周期: {format_date(start_day)} ~ {format_date(end_day)}（共 {total_day} 天）")
+        print(f"Period:     {format_date(start_day)} ~ {format_date(end_day)} ({total_day} days)")
     print(f"{'='*50}\n")
 
     week_stages = data.get("weekStages", [])
     if week_stages:
-        print("【每周汇总】")
+        print("[Weekly Summary]")
         for ws in week_stages:
             stage_num = ws.get("stage", 0)
-            stage_label = f"第 {stage_num} 周" if stage_num > 0 else "其他周"
+            stage_label = f"Week {stage_num}" if stage_num > 0 else "Other"
             print(f"--- {stage_label} ---")
             print(format_week_stage(ws))
             print()
@@ -391,7 +391,7 @@ def _cmd_schedule(args):
 
     event_tags = data.get("eventTags", [])
     if event_tags:
-        print("【赛事 / 事件】")
+        print("[Events]")
         for tag in event_tags:
             tag_day = tag.get("happenDay", 0)
             tag_name = tag.get("name", "")
@@ -403,12 +403,12 @@ def _cmd_schedule(args):
 
     entities = data.get("entities", [])
     if not entities:
-        print("该时间段内暂无训练日程安排")
+        print("No training schedule安排 found.")
         return
 
-    print(f"【训练日程】（共 {len(entities)} 天）")
+    print(f"[Training Schedule] ({len(entities)} days)")
     for i, entity in enumerate(entities, 1):
-        print(f"\n--- 第 {i} 天 ---")
+        print(f"\n--- Day {i} ---")
         print(format_schedule_entity(entity, programs_map))
 
     print()
